@@ -1,0 +1,26 @@
+# tag files
+tags
+tags.*
+
+# build files
+code/*.obj
+code/*.o
+*.o
+*.obj
+build/
+build_web/
+out
+slapmaster
+slapmaster.exe
+slapmaster.html
+slapmaster.js
+slapmaster.wasm
+slapmaster.data
+
+# debug files
+*.pdb
+*.rdi
+*.ilk
+
+# swap files
+.swp
