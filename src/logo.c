@@ -65,14 +65,14 @@ void UpdateRaylibLogo(void)
     // https://github.com/sponsors/raysan5 https://www.patreon.com/raylib :)
     if (logo.skipped == true && logo.elapsedTime < 1.0f)
     {
-        logo.elapsedTime += game.frameTime;
+        logo.elapsedTime += frameTime;
         return;
     }
 
     switch (logo.state)
     {
         case LOGO_START: // Small box blinking
-            logo.elapsedTime += game.frameTime;
+            logo.elapsedTime += frameTime;
             if (logo.elapsedTime >= 2.0f) // 2 seconds delay
             {
                 logo.state = LOGO_GROW1;
@@ -81,8 +81,8 @@ void UpdateRaylibLogo(void)
             break;
 
         case LOGO_GROW1: // Top and left bars growing
-            logo.topSideRecWidth += growSpeed*game.frameTime;
-            logo.leftSideRecHeight += growSpeed*game.frameTime;
+            logo.topSideRecWidth += growSpeed*frameTime;
+            logo.leftSideRecHeight += growSpeed*frameTime;
 
             if (logo.topSideRecWidth >= RAYLIB_LOGO_WIDTH)
             {
@@ -94,8 +94,8 @@ void UpdateRaylibLogo(void)
             break;
 
         case LOGO_GROW2: // Bottom and right bars growing
-            logo.bottomSideRecWidth += growSpeed*game.frameTime;
-            logo.rightSideRecHeight += growSpeed*game.frameTime;
+            logo.bottomSideRecWidth += growSpeed*frameTime;
+            logo.rightSideRecHeight += growSpeed*frameTime;
 
             if (logo.bottomSideRecWidth >= RAYLIB_LOGO_WIDTH)
             {
@@ -107,7 +107,7 @@ void UpdateRaylibLogo(void)
             break;
 
         case LOGO_TEXT: // Letters appearing (one by one)
-            logo.elapsedTime += game.frameTime;
+            logo.elapsedTime += frameTime;
 
             if (logo.lettersCount < 10 && logo.elapsedTime >= letterDelay)
             {
@@ -118,7 +118,7 @@ void UpdateRaylibLogo(void)
             // When all letters have appeared, just fade out everything
             if (logo.lettersCount >= 10)
             {
-                logo.alpha += fadeSpeed*game.frameTime;
+                logo.alpha += fadeSpeed*frameTime;
                 if (logo.alpha >= 1.0f)
                 {
                     logo.alpha = 1.0f;
@@ -129,13 +129,13 @@ void UpdateRaylibLogo(void)
             break;
 
         case LOGO_PAUSE: // Pause at end of animation
-            logo.elapsedTime += game.frameTime;
+            logo.elapsedTime += frameTime;
             if (logo.elapsedTime >= 1.5f)
                 logo.state = LOGO_END;
             break;
 
         case LOGO_END: // Animation is finished
-            game.currentScreen++;
+            currentScreen++;
             break;
     }
 }

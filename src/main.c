@@ -3,6 +3,7 @@
 // - See header files for more explanations/documentation
 
 #include "raylib.h"
+#include "raymath.h"
 
 #include "config.h" // Program config, e.g. window title/size, fps, vsync
 #include "logo.h"  // Raylib logo animation
@@ -18,8 +19,11 @@ typedef struct Viewport {
 
 // Globals
 // ----------------------------------------------------------------------------
-GameState  game;  // program and game-specific data
-Viewport   view;  // for rendering within aspect ratio
+Viewport view;  // for rendering within aspect ratio
+Camera2D camera;
+ScreenState currentScreen;
+float frameTime;
+bool gameShouldExit;
 
 // Local Functions Declaration
 // ----------------------------------------------------------------------------
@@ -41,7 +45,7 @@ int main(void)
     CreateNewWindow();
     InitAudioDevice();
     InitRaylibLogo();
-    InitGameState(SCREEN_LOGO);
+    InitGameState(SCREEN_GAMEPLAY);
 
     // No exit key (use alt+F4 or in-game exit option)
     SetExitKey(KEY_NULL);
@@ -85,7 +89,7 @@ void RunGameLoop(void)
         SetTargetFPS(MAX_FRAMERATE);
 
     // Main game loop
-    while (!WindowShouldClose() && !game.gameShouldExit)
+    while (!WindowShouldClose() && !gameShouldExit)
         UpdateDrawFrame();
 #endif
 }
@@ -97,11 +101,11 @@ void UpdateDrawFrame(void)
     // ----------------------------------------------------------------------------
 
     // Global updates
-    game.frameTime = GetFrameTime();
+    frameTime = GetFrameTime();
     HandleToggleFullscreen();
     UpdateCameraViewport();
 
-    switch(game.currentScreen)
+    switch(currentScreen)
     {
         case SCREEN_LOGO:     UpdateRaylibLogo();
                               break;
@@ -117,9 +121,9 @@ void UpdateDrawFrame(void)
 
         BeginScissorMode(view.x, view.y, // Draw within aspect ratio
                          view.width, view.height);
-            BeginMode2D(game.camera);    // Scale to camera view
+            BeginMode2D(camera);    // Scale to camera view
 
-            switch(game.currentScreen)
+            switch(currentScreen)
             {
                 case SCREEN_LOGO:     DrawRaylibLogo();
                                       break;
@@ -160,8 +164,8 @@ void UpdateCameraViewport(void)
         view.y = (winHeight - view.height)/2;
     }
 
-    game.camera.offset = (Vector2){ view.x + view.width/2.0f, view.y + view.height/2.0f };
-    game.camera.zoom   = (float)view.width/VIRTUAL_WIDTH;
+    camera.offset = (Vector2){ view.x + view.width/2.0f, view.y + view.height/2.0f };
+    camera.zoom   = (float)view.width/VIRTUAL_WIDTH;
 }
 
 void HandleToggleFullscreen(void)

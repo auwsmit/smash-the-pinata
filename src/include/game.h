@@ -21,6 +21,8 @@ typedef struct EntityPinata {
     Rectangle rect;
     float scale;
     float angle;
+    float padding;
+    bool slapped;
 } EntityPinata;
 
 typedef struct EntityHand {
@@ -31,18 +33,15 @@ typedef struct EntityHand {
     Vector2 velocity;
     float radius;
     float angle;
+    float padding;
     bool grabbed;
 } EntityHand;
 
-typedef struct GameState {
-    Camera2D camera;
-    ScreenState currentScreen;
-    float frameTime;
-    bool gameShouldExit;
-    bool debugMode;
-} GameState;
-
-extern GameState game; // global declaration
+// Game state scoped across project
+extern Camera2D camera;
+extern ScreenState currentScreen;
+extern float frameTime;
+extern bool gameShouldExit;
 
 // Prototypes
 // ----------------------------------------------------------------------------
@@ -54,5 +53,7 @@ void FreeGameState(void); // Free any allocated memory within game state
 // Update & Draw
 void UpdateGameFrame(void); // Updates all the game's data and objects for the current frame
 void DrawGameFrame(void); // Draws all the game's objects for the current frame
+
+void ResetGame(void);
 
 #endif // SLAPMASTER_GAME_HEADER_GUARD
