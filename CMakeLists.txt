@@ -7,10 +7,10 @@
 cmake_minimum_required(VERSION 3.11) # FetchContent is available in 3.11+
 
 # Name of the project, using C
-project("SlapMaster" C)
+project("SmashThePinata" C)
 
 # Executable name
-set(OUTPUT_NAME slapmaster)
+set(OUTPUT_NAME SmashThePinata)
 
 set(LIBRARIES raylib)
 if(NOT MSVC) # math library for Unix
@@ -45,7 +45,7 @@ endif()
 # Setup Project
 # --------------------------------------------------------------------------------
 
-file(GLOB SRC_FILES src/*.c src/entity/*.c)
+file(GLOB SRC_FILES src/*.c)
 add_executable(${OUTPUT_NAME} ${SRC_FILES})
 target_include_directories(${OUTPUT_NAME} PRIVATE src/include)
 target_link_libraries(${OUTPUT_NAME} ${LIBRARIES})
@@ -61,6 +61,7 @@ set_target_properties(${OUTPUT_NAME} # working directory set to repo directory
 
 # Web
 if (${PLATFORM} STREQUAL "Web")
+  set(OUTPUT_NAME index)
   set_target_properties(${OUTPUT_NAME} PROPERTIES SUFFIX ".html")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wall -Wno-missing-braces -Wunused-result -Wextra -Wmissing-prototypes -Wstrict-prototypes -Wfloat-conversion")
   set(CMAKE_C_FLAGS_RELEASE "-Os" CACHE STRING "" FORCE)

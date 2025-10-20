@@ -37,7 +37,7 @@ set script_dir=%~dp0
 
 :: Project Config
 :: ----------------------------------------------------------------------------
-set output=slapmaster
+set output=SmashThePinata
 set cmake_build_dir=build
 set source_dir=src
 set source_code=
@@ -135,7 +135,7 @@ if     "%web%"=="1"   set compile_platform=%web_platform%
 if not "%web%"=="1"   set compile_platform=%cc_platform%
 if     "%web%"=="1"                      set compile_link=%web_link%
 if not "%web%"=="1" if not "%msvc%"=="1" set compile_link=%cc_link%
-if     "%web%"=="1"                      set compile_out=%cc_out% %output%.html
+if     "%web%"=="1"                      set compile_out=%cc_out% index.html
 if not "%web%"=="1" if not "%msvc%"=="1" set compile_out=%cc_out% %output%.exe
 
 if "%debug%"=="1"    set cl_link=%cl_link% %cl_link_debug%
@@ -162,11 +162,11 @@ if "%cmake%"=="1" (
     %cmake_setup_cmd% %cmake_setup_flags%
     %cmake_build_cmd% %cmake_build_flags%
     if "%web%"=="1" (
-        del /q "%output%.html" "%output%.js" "%output%.wasm" "%output%.data"
-        copy "%output_dir%\%output%.html" .
-        copy "%output_dir%\%output%.js" .
-        copy "%output_dir%\%output%.wasm" .
-        copy "%output_dir%\%output%.data" .
+        del /q "index.html" "index.js" "index.wasm" "index.data"
+        copy "%output_dir%\index.html" .
+        copy "%output_dir%\index.js" .
+        copy "%output_dir%\index.wasm" .
+        copy "%output_dir%\index.data" .
     ) else (
         del /q "%output%.exe"
         copy "%output_dir%\%output%.exe" .
@@ -192,7 +192,7 @@ if "%cmake%"=="1" (
 ) else (
     rmdir /s /q build_web
     del /q %output%.exe
-    del /q %output%.html %output%.js %output%.wasm %output%.data
+    del /q index.html index.js index.wasm index.data
     del /q %output%.ilk %output%.pdb vc140.pdb *.rdi
     echo Build files cleaned
 )

@@ -37,7 +37,7 @@ typedef struct EntityHand {
     bool grabbed;
 } EntityHand;
 
-// Game state scoped across project
+// Game state, used across project
 extern Camera2D camera;
 extern ScreenState currentScreen;
 extern float frameTime;
@@ -54,6 +54,6 @@ void FreeGameState(void); // Free any allocated memory within game state
 void UpdateGameFrame(void); // Updates all the game's data and objects for the current frame
 void DrawGameFrame(void); // Draws all the game's objects for the current frame
 
-void ResetGame(void);
+void ResetPinata(void);
 
 #endif // SLAPMASTER_GAME_HEADER_GUARD

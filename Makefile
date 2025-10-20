@@ -21,23 +21,20 @@
 # =============================================================================
 
 # Output executable name
-OUTPUT  := slapmaster
+OUTPUT  := SmashThePinata
 
 # Source code, headers, and object file paths
 SRC_DIR := src
 INC_DIR := $(SRC_DIR)/include
 HEADERS := $(wildcard $(INC_DIR)/*.h)
-SRC     := $(wildcard $(SRC_DIR)/*.c) \
-           $(wildcard $(SRC_DIR)/entity/*.c)
-
-# Specify paths for make to search for files
-VPATH   := $(SRC_DIR) $(SRC_DIR)/entity
+SRC     := $(wildcard $(SRC_DIR)/*.c)
 
 # =============================================================================
 # Platform Settings
 # =============================================================================
 
 ifeq ($(PLATFORM),WEB)
+    OUTPUT := index
     EXTENSION := .html
 else ifeq ($(OS),Windows_NT)
     OS := WINDOWS
@@ -200,6 +197,6 @@ run:
 # Clean up generated build files
 clean:
 	@rm -rf $(OUTPUT)$(EXTENSION) \
-	        $(OUTPUT).html $(OUTPUT).js $(OUTPUT).wasm $(OUTPUT).data build_web/ \
+	        index.html index.js index.wasm index.data build_web/ \
 	        $(OUTPUT).ilk $(OUTPUT).pdb vc140.pdb *.rdi
 	@echo "Make build files cleaned"

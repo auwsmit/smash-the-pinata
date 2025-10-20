@@ -32,7 +32,7 @@ script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 
 # Project Config
 # -----------------------------------------------------------------------------
-output=slapmaster
+output=SmashThePinata
 cmake_build_dir=build
 source_dir=src
 source_code=
@@ -126,7 +126,7 @@ script_choose_simple_lines()
     if [[ "$web" != 1     ]]; then compile_platform="$cc_platform"; fi
     if [[ "$web" == 1     ]]; then compile_link="$web_link"; fi
     if [[ "$web" != 1     ]]; then compile_link="$cc_link"; fi
-    if [[ "$web" == 1     ]]; then compile_out="$cc_out $output.html"; fi
+    if [[ "$web" == 1     ]]; then compile_out="$cc_out index.html"; fi
     if [[ "$web" != 1     ]]; then compile_out="$cc_out $output"; fi
     if [[ "$web" == 1     ]]; then compile_release="$web_release"; fi
     if [[ "$debug" == 1   ]]; then compile="$compile $cc_debug"; fi
@@ -141,11 +141,11 @@ script_cmake_config_and_build()
     eval $cmake_setup_cmd $cmake_setup_flags
     eval $cmake_build_cmd $cmake_build_flags
     if [[ "$web" == 1 ]]; then
-        rm -f "$output.html" "$output.js" "$output.wasm" "$output.data"
-        cp "$output_dir/$output.html" .
-        cp "$output_dir/$output.js" .
-        cp "$output_dir/$output.wasm" .
-        cp "$output_dir/$output.data" .
+        rm -f "index.html" "index.js" "index.wasm" "index.data"
+        cp "index_dir/index.html" .
+        cp "index_dir/index.js" .
+        cp "index_dir/index.wasm" .
+        cp "index_dir/index.data" .
     else
         rm -f "$output"
         cp "$output_dir/$output" .
@@ -165,7 +165,7 @@ script_build_cleanup()
         rm -rf $output build/
         echo "CMake build files cleaned"
     else
-        rm -rf $output build_web/ $output.html $output.js $output.wasm $output.data
+        rm -rf index build_web/ index.html index.js index.wasm index.data
         echo "Build files cleaned"
     fi
     popd

@@ -1,8 +1,8 @@
 // EXPLANATION:
 // For the raylib logo animation at start of program
 
-#ifndef SLAPMASTER_LOGO_HEADER_GUARD
-#define SLAPMASTER_LOGO_HEADER_GUARD
+#ifndef SMASHTHEPINATA_LOGO_HEADER_GUARD
+#define SMASHTHEPINATA_LOGO_HEADER_GUARD
 
 #include "raylib.h"
 
@@ -49,5 +49,5 @@ void UpdateRaylibLogo(void); // Update logo animation for the current frame
                              // Also transitions to title screen when finished
 void DrawRaylibLogo(void);
 
-#endif // SLAPMASTER_LOGO_HEADER_GUARD
+#endif // SMASHTHEPINATA_LOGO_HEADER_GUARD
 

@@ -3,19 +3,14 @@ tags
 tags.*
 
 # build files
-code/*.obj
-code/*.o
-*.o
-*.obj
 build/
-build_web/
 out
-slapmaster
-slapmaster.exe
-slapmaster.html
-slapmaster.js
-slapmaster.wasm
-slapmaster.data
+SmashThePinata
+SmashThePinata.exe
+index.html
+index.js
+index.wasm
+index.data
 
 # debug files
 *.pdb
