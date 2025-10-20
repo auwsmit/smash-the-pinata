@@ -70,20 +70,28 @@ void UpdateGameFrame(void)
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
     {
         hand.grabbed = false;
+        maxSpeed = 0;
     }
 
     if (hand.grabbed)
     {
         Vector2 prevPos = hand.position;
         // Vector2 seekPos = Vector2Subtract(grabPos, grabOffset);
-        Vector2 newPos = Vector2Lerp(hand.position, grabPos, 20.0f*frameTime);
+        Vector2 newPos = Vector2Lerp(hand.position, grabPos, 25.0f*frameTime);
         Vector2 handVelocity = Vector2Subtract(newPos, prevPos);
-        speed = Vector2Length(handVelocity)/frameTime*0.01f;
+        speed = Vector2Length(handVelocity)/frameTime*camera.zoom*0.0075f;
         float newAngle = atan2f(handVelocity.y, handVelocity.x)*RAD2DEG + 270.0f;
-        float angleDelta = fmodf(newAngle - hand.angle + 540.0f, 360.0f) - 180.0f;
+        newAngle = fmodf(newAngle, 360.0f);
+        if (newAngle < 0.0f) newAngle += 360.0f;
+        float angleDelta = newAngle - hand.angle;
+        if (angleDelta > 180.0f) angleDelta -= 360.0f;
+        if (angleDelta < -180.0f) angleDelta += 360.0f;
 
         if (speed > 0.05f)
-            hand.angle = fmodf(Lerp(hand.angle, hand.angle + angleDelta, 10.0f*frameTime), 360.0f);
+        {
+            hand.angle = fmodf(hand.angle + Lerp(0.0f, angleDelta, 10.0f*frameTime), 360.0f);
+            if (hand.angle < 0.0f) hand.angle += 360.0f;
+        }
         if (!pinata.smashed && (speed > maxSpeed))
             maxSpeed = speed;
 
@@ -94,17 +102,20 @@ void UpdateGameFrame(void)
         hand.position = Vector2Lerp(hand.position, hand.startPos, 5.0f*frameTime);
 
         // shortest angle difference
-        float angleDelta = fmodf(hand.startAngle - hand.angle + 540.0f, 360.0f) - 180.0f;
+        float angleDelta = hand.startAngle - hand.angle;
+        if (angleDelta > 180.0f) angleDelta -= 360.0f;
+        if (angleDelta < -180.0f) angleDelta += 360.0f;
         hand.angle = fmodf(hand.angle + angleDelta*0.05f, 360.0f);
+        if (hand.angle < 0.0f) hand.angle += 360.0f;
     }
 
     // Hit pinata at minimum velocity
     // ----------------------------------------------------------------------------
-    if (!pinata.smashed && hand.grabbed && (speed > 200.0f) &&
+    if (!pinata.smashed && hand.grabbed && (speed > 50.0f) &&
         CheckCollisionCircleRec(hand.position, hand.radius, pinata.rect))
     {
         pinata.smashed = true;
-        pinata.rect.x -= speed*0.75f;
+        pinata.rect.x -= speed*2.0f;
         score = speed;
         timer = 0;
     }
@@ -178,6 +189,8 @@ void DrawGameFrame(void)
     // const int textSize = 50;
     // int textX = 50;
     // int textY = 50;
+    // DrawText(TextFormat("zoom: %.3f", camera.zoom), textX, textY, textSize, RAYWHITE);
+    // textY += textSize;
     // DrawText(TextFormat("current speed: %.0f", speed), textX, textY, textSize, RAYWHITE);
     // textY += textSize;
     // DrawText(TextFormat("max speed: %.0f", maxSpeed), textX, textY, textSize, RAYWHITE);

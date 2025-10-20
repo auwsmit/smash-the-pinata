@@ -7,9 +7,9 @@
 // Macros
 // ----------------------------------------------------------------------------
 
-#define WINDOW_TITLE "Slap Master"
+#define WINDOW_TITLE "Smash the Pinata"
 
-#define ASPECT_RATIO (16.0f/9.0f)
+#define ASPECT_RATIO (21.0f/10.0f)
 #define VIRTUAL_HEIGHT 1080 // The size of the game world
 #define VIRTUAL_WIDTH (int)(VIRTUAL_HEIGHT*ASPECT_RATIO)
 
