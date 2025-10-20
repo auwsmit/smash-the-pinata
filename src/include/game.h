@@ -1,8 +1,8 @@
 // EXPLANATION:
 // All the game logic, including how/when to draw to screen
 
-#ifndef SLAPMASTER_GAME_HEADER_GUARD
-#define SLAPMASTER_GAME_HEADER_GUARD
+#ifndef SMASHTHEPINATA_GAME_HEADER_GUARD
+#define SMASHTHEPINATA_GAME_HEADER_GUARD
 
 #include "raylib.h"
 
@@ -56,4 +56,4 @@ void DrawGameFrame(void); // Draws all the game's objects for the current frame
 
 void ResetPinata(void);
 
-#endif // SLAPMASTER_GAME_HEADER_GUARD
+#endif // SMASHTHEPINATA_GAME_HEADER_GUARD

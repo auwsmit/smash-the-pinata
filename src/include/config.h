@@ -1,8 +1,8 @@
 // EXPLANATION:
 // For configuring aspects of the program outside of game logic
 
-#ifndef SLAPMASTER_CONFIG_HEADER_GUARD
-#define SLAPMASTER_CONFIG_HEADER_GUARD
+#ifndef SMASHTHEPINATA_CONFIG_HEADER_GUARD
+#define SMASHTHEPINATA_CONFIG_HEADER_GUARD
 
 // Macros
 // ----------------------------------------------------------------------------
@@ -20,4 +20,4 @@
 #define MAX_FRAMERATE 120 // Set to 0 for uncapped framerate
 #define VSYNC_ENABLED true
 
-#endif // SLAPMASTER_CONFIG_HEADER_GUARD
+#endif // SMASHTHEPINATA_CONFIG_HEADER_GUARD
