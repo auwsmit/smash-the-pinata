@@ -8,8 +8,7 @@
 // Game globals
 EntityPinata pinata;
 EntityHand hand;
-Vector2 mousePos;
-Vector2 mouseDelta;
+Vector2 grabPos;
 float timer;
 float score;
 float speed;
@@ -30,6 +29,7 @@ void InitGameState(ScreenState screen)
     pinata.rect.width = pinata.rect.height*((float)pinata.sprite.width/pinata.sprite.height);
     pinata.rect.x = 0 + pinata.padding;
     pinata.rect.y = (VIRTUAL_HEIGHT - pinata.rect.height)/2;
+    pinata.startPos = (Vector2){ pinata.rect.x, pinata.rect.y };
 
     hand.padding = 500.0f;
     hand.sprite = LoadTexture("assets/hand.png");
@@ -37,6 +37,9 @@ void InitGameState(ScreenState screen)
     hand.radius = 100.0f;
     hand.position.x = VIRTUAL_WIDTH - hand.padding - hand.radius/2;
     hand.position.y = (VIRTUAL_HEIGHT - hand.radius)/2;
+    hand.startPos = hand.position;
+    hand.startAngle = 90.0f;
+    hand.angle = hand.startAngle;
 }
 
 void FreeGameState(void)
@@ -51,54 +54,67 @@ void FreeGameState(void)
 void UpdateGameFrame(void)
 {
     timer += frameTime;
-    mousePos   = GetScreenToWorld2D(GetMousePosition(), camera);
-    if (IsGestureDetected(GESTURE_TAP))
-        mouseDelta = (Vector2){ 0 }; // needed because the initial mouse delta is based on wherever the last touch point was
-    else
-        mouseDelta = Vector2Scale(GetMouseDelta(), 1.0f/camera.zoom);
+
+    grabPos = GetScreenToWorld2D(GetMousePosition(), camera);
 
     // Grab hand
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
-        CheckCollisionPointCircle(mousePos, hand.position, hand.radius))
+    // ----------------------------------------------------------------------------
+    if (!hand.grabbed && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
+        CheckCollisionPointCircle(grabPos, hand.position, hand.radius))
     {
         hand.grabbed = true;
+        // grabOffset = Vector2Subtract(grabPos, hand.position);
+        // grabAngle = hand.angle;
     }
 
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
     {
         hand.grabbed = false;
-        hand.position.x = VIRTUAL_WIDTH - hand.padding - hand.radius/2;
-        hand.position.y = (VIRTUAL_HEIGHT - hand.radius)/2;
     }
 
     if (hand.grabbed)
     {
-        speed = Vector2Length(mouseDelta);
-        if (speed > maxSpeed) maxSpeed = speed;
-        hand.position = Vector2Add(hand.position, mouseDelta);
-    }
-    else maxSpeed = 0;
+        Vector2 prevPos = hand.position;
+        // Vector2 seekPos = Vector2Subtract(grabPos, grabOffset);
+        Vector2 newPos = Vector2Lerp(hand.position, grabPos, 20.0f*frameTime);
+        Vector2 handVelocity = Vector2Subtract(newPos, prevPos);
+        speed = Vector2Length(handVelocity)/frameTime*0.01f;
+        float newAngle = atan2f(handVelocity.y, handVelocity.x)*RAD2DEG + 270.0f;
+        float angleDelta = fmodf(newAngle - hand.angle + 540.0f, 360.0f) - 180.0f;
 
-    // Slap pinata at minimum velocity
-    if (!pinata.slapped && hand.grabbed && (speed > 250) &&
+        if (speed > 0.05f)
+            hand.angle = fmodf(Lerp(hand.angle, hand.angle + angleDelta, 10.0f*frameTime), 360.0f);
+        if (!pinata.smashed && (speed > maxSpeed))
+            maxSpeed = speed;
+
+        hand.position = newPos;
+    }
+    else // !hand.grabbed
+    {
+        hand.position = Vector2Lerp(hand.position, hand.startPos, 5.0f*frameTime);
+
+        // shortest angle difference
+        float angleDelta = fmodf(hand.startAngle - hand.angle + 540.0f, 360.0f) - 180.0f;
+        hand.angle = fmodf(hand.angle + angleDelta*0.05f, 360.0f);
+    }
+
+    // Hit pinata at minimum velocity
+    // ----------------------------------------------------------------------------
+    if (!pinata.smashed && hand.grabbed && (speed > 200.0f) &&
         CheckCollisionCircleRec(hand.position, hand.radius, pinata.rect))
     {
-        pinata.slapped = true;
+        pinata.smashed = true;
         pinata.rect.x -= speed*0.75f;
         score = speed;
-        maxSpeed = 0;
         timer = 0;
     }
 
-    // Reset after pinata slapped
-    if (pinata.slapped && (timer >= 1.0f)) ResetPinata();
-
-    // TODO:
-    // - hand and pinata physics/inertia/animation (lerp?)
-    // - extras (sounds, particles, other pinatas)
-    // - polish
+    // Reset after pinata smashed
+    // ----------------------------------------------------------------------------
+    if (pinata.smashed && (timer >= 1.0f)) ResetPinata();
 
     // Debug
+    // ----------------------------------------------------------------------------
     if (IsKeyPressed(KEY_R))
     {
         ResetPinata();
@@ -107,8 +123,9 @@ void UpdateGameFrame(void)
 
 void ResetPinata(void)
 {
-    pinata.slapped = false;
+    pinata.smashed = false;
     pinata.rect.x = 0 + pinata.padding;
+    maxSpeed = 0;
     score = 0;
 }
 
@@ -146,7 +163,7 @@ void DrawGameFrame(void)
     DrawTexturePro(*sprite, spriteSrc, spriteDest, spriteOrigin, hand.angle, WHITE);
 
     // Draw score
-    if (pinata.slapped)
+    if (pinata.smashed)
     {
         const char *scoreText = TextFormat("Score: %.0f", score);
         int fontSize = 180;
@@ -161,7 +178,9 @@ void DrawGameFrame(void)
     // const int textSize = 50;
     // int textX = 50;
     // int textY = 50;
-    // DrawText(TextFormat("current speed: %.0f", speed), 0, textY, textSize, RAYWHITE);
+    // DrawText(TextFormat("current speed: %.0f", speed), textX, textY, textSize, RAYWHITE);
     // textY += textSize;
     // DrawText(TextFormat("max speed: %.0f", maxSpeed), textX, textY, textSize, RAYWHITE);
+    // textY += textSize;
+    // DrawText(TextFormat("hand angle: %.0f", hand.angle), textX, textY, textSize, RAYWHITE);
 }

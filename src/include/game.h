@@ -19,10 +19,11 @@ typedef enum ScreenState {
 typedef struct EntityPinata {
     Texture sprite;
     Rectangle rect;
+    Vector2 startPos;
     float scale;
     float angle;
     float padding;
-    bool slapped;
+    bool smashed;
 } EntityPinata;
 
 typedef struct EntityHand {
@@ -30,9 +31,12 @@ typedef struct EntityHand {
     Sound whoosh;
     Sound slap;
     Vector2 position;
-    Vector2 velocity;
+    Vector2 startPos;
+    Vector2 offset;
     float radius;
     float angle;
+    float startAngle;
+    float grabAngle;
     float padding;
     bool grabbed;
 } EntityHand;
