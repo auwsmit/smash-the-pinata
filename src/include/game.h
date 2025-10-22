@@ -22,7 +22,7 @@ typedef struct EntityPinata {
     Vector2 startPos;
     float scale;
     float angle;
-    float padding;
+    float spinRate;
     bool smashed;
 } EntityPinata;
 
@@ -31,13 +31,13 @@ typedef struct EntityHand {
     Sound whoosh;
     Sound slap;
     Vector2 position;
+    Vector2 velocity;
     Vector2 startPos;
     Vector2 offset;
     float radius;
     float angle;
     float startAngle;
     float grabAngle;
-    float padding;
     bool grabbed;
 } EntityHand;
 
@@ -54,10 +54,19 @@ extern bool gameShouldExit;
 void InitGameState(ScreenState screen); // Initialize game data and allocate memory for sounds
 void FreeGameState(void); // Free any allocated memory within game state
 
-// Update & Draw
+// Update
 void UpdateGameFrame(void); // Updates all the game's data and objects for the current frame
-void DrawGameFrame(void); // Draws all the game's objects for the current frame
-
 void ResetPinata(void);
+
+// Collision
+bool CheckCollisionPointRecRotated(Vector2 point, Rectangle rect, Vector2 origin, float angle);
+bool CheckCollisionCircleRecRotated(Vector2 center, float radius, Rectangle rect, Vector2 origin, float angle);
+
+// Draw
+void DrawGameFrame(void); // Draws all the game's objects for the current frame
+void DrawSpriteRectangle(Texture *sprite, Rectangle rect, float angle);
+void DrawSpriteCircle(Texture *sprite, Vector2 center, float radius, float angle);
+
+// Misc
 
 #endif // SMASHTHEPINATA_GAME_HEADER_GUARD
