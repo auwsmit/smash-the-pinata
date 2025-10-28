@@ -13,7 +13,7 @@
                               // ... or just use camera zoom
 #define RAYLIB_LOGO_OUTLINE (RAYLIB_LOGO_WIDTH/16)
 #define RAYLIB_LOGO_FONT_SIZE (RAYLIB_LOGO_WIDTH/8 + RAYLIB_LOGO_OUTLINE)
-#define RAYLIB_LOGO_BACKGROUND ColorBrightness(ORANGE, -0.05f)
+#define RAYLIB_LOGO_BACKGROUND ColorBrightness(ORANGE, -0.1f)
 #define RAYLIB_LOGO_COLOR YELLOW
 
 // Types and Structures

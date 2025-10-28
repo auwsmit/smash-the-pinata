@@ -12,32 +12,43 @@
 // Types and Structures
 // ----------------------------------------------------------------------------
 
-typedef enum ScreenState {
-    SCREEN_LOGO, SCREEN_GAMEPLAY
-} ScreenState;
+typedef enum { SCREEN_LOGO, SCREEN_GAMEPLAY } ScreenState;
+
+typedef enum { MODE_BAT, MODE_HAND } GameMode;
 
 typedef struct EntityPinata {
     Texture sprite;
     Rectangle rect;
     Vector2 startPos;
+    Vector2 origin;
     float scale;
     float angle;
     float spinRate;
     bool smashed;
 } EntityPinata;
 
+typedef struct EntityGrabCommon {
+} EntityGrabCommon;
+
+typedef struct EntityBat {
+    Texture sprite;
+    Sound soundWoosh;
+    Sound soundHit;
+    Rectangle rect;
+    Vector2 origin;
+    float angle;
+} EntityBat;
+
 typedef struct EntityHand {
     Texture sprite;
-    Sound whoosh;
-    Sound slap;
+    Sound soundWoosh;
+    Sound soundHit;
     Vector2 position;
     Vector2 velocity;
     Vector2 startPos;
-    Vector2 offset;
     float radius;
     float angle;
     float startAngle;
-    float grabAngle;
     bool grabbed;
 } EntityHand;
 
@@ -51,7 +62,7 @@ extern bool gameShouldExit;
 // ----------------------------------------------------------------------------
 
 // Initialization
-void InitGameState(ScreenState screen); // Initialize game data and allocate memory for sounds
+void InitGameState(void); // Initialize game data and allocate memory for sounds
 void FreeGameState(void); // Free any allocated memory within game state
 
 // Update
@@ -64,7 +75,7 @@ bool CheckCollisionCircleRecRotated(Vector2 center, float radius, Rectangle rect
 
 // Draw
 void DrawGameFrame(void); // Draws all the game's objects for the current frame
-void DrawSpriteRectangle(Texture *sprite, Rectangle rect, float angle);
+void DrawSpriteRectangle(Texture *sprite, Rectangle rect, Vector2 origin, float angle);
 void DrawSpriteCircle(Texture *sprite, Vector2 center, float radius, float angle);
 
 // Misc

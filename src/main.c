@@ -45,7 +45,7 @@ int main(void)
     CreateNewWindow();
     InitAudioDevice();
     InitRaylibLogo();
-    InitGameState(SCREEN_GAMEPLAY);
+    InitGameState();
 
     // No exit key (use alt+F4 or in-game exit option)
     SetExitKey(KEY_NULL);
