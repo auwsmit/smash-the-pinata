@@ -24,14 +24,14 @@ float maxSpeed;
 
 void InitGameState(void)
 {
-    currentScreen = SCREEN_GAMEPLAY;
+    currentScreen = SCREEN_LOGO;
     currentMode = MODE_BAT;
     camera.target = (Vector2){ VIRTUAL_WIDTH/2, VIRTUAL_HEIGHT/2 };
 
     // Assets
     musicBackground   = LoadMusicStream("assets/music_background.wav");
     musicWin          = LoadMusicStream("assets/music_highscore.wav");
-    musicWhooshEffect       = LoadMusicStream("assets/whoosh.wav");
+    musicWhooshEffect = LoadMusicStream("assets/whoosh.wav");
     pinata.sprite     = LoadFilteredTexture("assets/pinata.png");
     pinata.soundHit   = LoadSound("assets/hit.wav");
     bat.sprite        = LoadFilteredTexture("assets/bat.png");
@@ -39,6 +39,7 @@ void InitGameState(void)
     hand.spriteOpen   = LoadFilteredTexture("assets/hand_open.png");
     hand.spriteClosed = LoadFilteredTexture("assets/hand_closed.png");
 
+    // Setup sounds and music
     SetMusicVolume(musicWhooshEffect, 0.0f);
     SetMusicPitch(musicWhooshEffect, 2.0f);
     PlayMusicStream(musicWhooshEffect);
@@ -57,7 +58,9 @@ void InitGameState(void)
     hand.angle      = hand.startAngle;
     hand.radius     = 100.0f;
     hand.position.x = VIRTUAL_WIDTH - 700.0f - hand.radius/2;
-    hand.position.y = (VIRTUAL_HEIGHT - hand.radius)/2 + 200;
+    hand.position.y = (VIRTUAL_HEIGHT - hand.radius)/2;
+    if (currentMode == MODE_BAT)
+        hand.position.y += 200.0f;
     hand.startPos   = hand.position;
 
     // Bat
@@ -102,11 +105,16 @@ void UpdateGameFrame(void)
 
     if (IsKeyPressed(KEY_SPACE))
     {
-        // TODO change mode
         if (currentMode == MODE_HAND)
+        {
             currentMode = MODE_BAT;
+            hand.startPos.y += 200.0f;
+        }
         else
+        {
             currentMode = MODE_HAND;
+            hand.startPos.y -= 200.0f;
+        }
     }
 
     // Grab hand/bat
@@ -114,13 +122,12 @@ void UpdateGameFrame(void)
     if (!hand.grabbed && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
         hand.grabbed = true;
-        // grabOffset = Vector2Subtract(grabPos, hand.position);
-        // grabAngle = hand.angle;
     }
 
     if (hand.grabbed && IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
     {
         hand.grabbed = false;
+        speed = 0;
         maxSpeed = 0;
     }
 
@@ -129,9 +136,9 @@ void UpdateGameFrame(void)
         Vector2 prevPos = hand.position;
         Vector2 newPos = Vector2Lerp(hand.position, grabPos, 25.0f*frameTime);
         hand.velocity = Vector2Subtract(newPos, prevPos);
-        speed = fabsf(hand.velocity.x)*175*frameTime*camera.zoom;
-#if defined(PLATFORM_WEB)
-        speed *= 2;
+        speed = fabsf(hand.velocity.x)*camera.zoom/frameTime*0.01f;
+#if defined(PLATFORM_WEB) // web canvas scales differently
+        speed *= 1.5f;
 #endif
 
         float newAngle;
@@ -177,9 +184,12 @@ void UpdateGameFrame(void)
         bat.angle = hand.angle - 90.0f;
     }
 
-    float whooshVolume = Remap(speed, 20, 100.0f, 0, 0.4f);
-    float whooshPitch = Remap(speed, 0, 200.0f, 1.0f, 4.0f);
-    if (speed < 10) whooshVolume = 0.0f;
+    static float whooshVolume = 0.0f;
+    static float whooshPitch = 1.0f;
+    float targetVolume = Remap(speed, 0, 100.0f, 0, 1.0f);
+    float targetPitch = Remap(speed, 0, 200.0f, 1.0f, 4.0f);
+    whooshVolume = Lerp(whooshVolume, targetVolume, 10.0f*frameTime);
+    whooshPitch  = Lerp(whooshPitch, targetPitch, 10.0f*frameTime);
     SetMusicVolume(musicWhooshEffect, whooshVolume);
     SetMusicPitch(musicWhooshEffect, whooshPitch);
 
@@ -189,13 +199,15 @@ void UpdateGameFrame(void)
     if (!pinata.smashed && hand.grabbed && (speed > 50.0f) && (hand.velocity.x < 0) &&
         CheckCollisionCircleRecRotated(hand.position, hand.radius, pinata.rect, origin, pinata.angle))
     {
-        pinata.smashed = true;
-        pinata.spinRate = -speed*0.01f;
         score = speed;
+        pinata.smashed = true;
+        pinata.spinRate = -speed*0.03f;
+        pinata.xVelocity = score*0.1f;
         if (score > 200.0f)
         {
             timer = 3.0f;
-            pinata.spinRate *= 3;
+            pinata.spinRate *= 1.5f;
+            pinata.xVelocity *= 0.3f;
             PlayMusicStream(musicWin);
             if (currentMode == MODE_BAT) PlaySound(bat.soundHit);
 
@@ -207,7 +219,7 @@ void UpdateGameFrame(void)
     }
     if (pinata.smashed)
     {
-        pinata.rect.x -= score*frameTime*8.0f;
+        pinata.rect.x -= pinata.xVelocity;
         pinata.angle += pinata.spinRate;
     }
 
@@ -276,7 +288,7 @@ void DrawGameFrame(void)
                  fontSize, fontColor);
     }
 
-    // Debug
+    // // Debug
     // const int textSize = 50;
     // int textX = 50;
     // int textY = 50;

@@ -47,9 +47,6 @@ int main(void)
     InitRaylibLogo();
     InitGameState();
 
-    // No exit key (use alt+F4 or in-game exit option)
-    SetExitKey(KEY_NULL);
-
     // Debug:
     SetExitKey(KEY_Q);
 

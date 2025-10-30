@@ -25,6 +25,7 @@ typedef struct EntityPinata {
     float scale;
     float angle;
     float spinRate;
+    float xVelocity;
     bool smashed;
 } EntityPinata;
 
