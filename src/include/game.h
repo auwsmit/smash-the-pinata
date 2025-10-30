@@ -18,6 +18,7 @@ typedef enum { MODE_BAT, MODE_HAND } GameMode;
 
 typedef struct EntityPinata {
     Texture sprite;
+    Sound soundHit;
     Rectangle rect;
     Vector2 startPos;
     Vector2 origin;
@@ -27,22 +28,18 @@ typedef struct EntityPinata {
     bool smashed;
 } EntityPinata;
 
-typedef struct EntityGrabCommon {
-} EntityGrabCommon;
-
 typedef struct EntityBat {
     Texture sprite;
-    Sound soundWoosh;
     Sound soundHit;
     Rectangle rect;
     Vector2 origin;
     float angle;
+    float startAngle;
 } EntityBat;
 
 typedef struct EntityHand {
-    Texture sprite;
-    Sound soundWoosh;
-    Sound soundHit;
+    Texture spriteOpen;
+    Texture spriteClosed;
     Vector2 position;
     Vector2 velocity;
     Vector2 startPos;
@@ -64,6 +61,7 @@ extern bool gameShouldExit;
 // Initialization
 void InitGameState(void); // Initialize game data and allocate memory for sounds
 void FreeGameState(void); // Free any allocated memory within game state
+Texture LoadFilteredTexture(char* path);
 
 // Update
 void UpdateGameFrame(void); // Updates all the game's data and objects for the current frame
