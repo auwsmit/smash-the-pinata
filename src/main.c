@@ -47,9 +47,6 @@ int main(void)
     InitRaylibLogo();
     InitGameState();
 
-    // Debug:
-    SetExitKey(KEY_Q);
-
     // Start the game loop
     // (See UpdateDrawFrame() for the full game loop)
     RunGameLoop();

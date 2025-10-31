@@ -58,7 +58,6 @@ typedef struct {
     Color color;
     float angle;
     float rotationRate;
-    bool active;
 } Candy;
 
 // Game state, used across project
@@ -78,9 +77,8 @@ Texture LoadFilteredTexture(char* path);
 // Update
 void UpdateGameFrame(void); // Updates all the game's data and objects for the current frame
 void SpawnCandy(void);
-void ResetPinata(void);
 
-// Collision
+// Collision (for rotated rectangles)
 bool CheckCollisionPointRecRotated(Vector2 point, Rectangle rect, Vector2 origin, float angle);
 bool CheckCollisionCircleRecRotated(Vector2 center, float radius, Rectangle rect, Vector2 origin, float angle);
 
@@ -88,6 +86,7 @@ bool CheckCollisionCircleRecRotated(Vector2 center, float radius, Rectangle rect
 void DrawGameFrame(void); // Draws all the game's objects for the current frame
 void DrawSpriteRectangle(Texture *sprite, Rectangle rect, Vector2 origin, float angle);
 void DrawSpriteCircle(Texture *sprite, Vector2 center, float radius, float angle);
+void DrawCenterText(const char* text, Color fontColor, bool nextLine);
 
 // Misc
 

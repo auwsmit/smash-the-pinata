@@ -10,8 +10,9 @@ GameMode currentMode           = { 0 };
 EntityPinata pinata            = { 0 };
 EntityHand hand                = { 0 };
 EntityBat bat                  = { 0 };
-Candy candyPiece[CANDY_AMOUNT] = { 0 };
-Texture textureCandy[8];
+Candy candy[CANDY_AMOUNT] = { 0 };
+Texture candyTexture[8];
+Font textFont;
 Music musicBackground;
 Music musicWin;
 Sound soundWhoosh;
@@ -20,6 +21,7 @@ float timer;
 float score;
 float speed;
 float maxSpeed;
+bool showHint;
 
 // Initialization
 // ----------------------------------------------------------------------------
@@ -31,6 +33,8 @@ void InitGameState(void)
     camera.target = (Vector2){ VIRTUAL_WIDTH/2, VIRTUAL_HEIGHT/2 };
 
     // Load Assets
+    textFont = LoadFontEx("assets/TheVisitor.ttf", 100, 0, 0);
+    SetTextureFilter(textFont.texture, TEXTURE_FILTER_BILINEAR);
     musicBackground   = LoadMusicStream("assets/music_background.wav");
     musicWin          = LoadMusicStream("assets/music_highscore.wav");
     soundWhoosh       = LoadSound("assets/whoosh.wav");
@@ -41,11 +45,7 @@ void InitGameState(void)
     hand.spriteOpen   = LoadFilteredTexture("assets/hand_open.png");
     hand.spriteClosed = LoadFilteredTexture("assets/hand_closed.png");
     for (unsigned int i = 0; i < 8; i++)
-        textureCandy[i] = LoadFilteredTexture((char *)TextFormat("assets/candy%i.png", i + 1));
-
-    // Setup sounds and music
-    // SetMusicVolume(soundWhoosh, 0.0f);
-    PlayMusicStream(musicBackground);
+        candyTexture[i] = LoadFilteredTexture((char *)TextFormat("assets/candy%i.png", i + 1));
 
     // Pinata
     pinata.rect.height = 800;
@@ -68,13 +68,15 @@ void InitGameState(void)
     // Bat
     bat.rect.height = 800;
     bat.rect.width  = bat.rect.height*((float)bat.sprite.width/bat.sprite.height);
-    // bat.rect.x = VIRTUAL_WIDTH - 500.0f - bat.rect.width;
-    // bat.rect.y = bat.rect.height*(2.0f/3.0f);
     bat.origin = (Vector2){ bat.rect.width/2.0f, bat.rect.height - bat.rect.height/6.0f };
+
+    showHint = true;
+    PlayMusicStream(musicBackground);
 }
 
 void FreeGameState(void)
 {
+    UnloadFont(textFont);
     UnloadMusicStream(musicBackground);
     UnloadMusicStream(musicWin);
     UnloadSound(soundWhoosh);
@@ -85,17 +87,17 @@ void FreeGameState(void)
     UnloadTexture(hand.spriteOpen);
     UnloadTexture(hand.spriteClosed);
     for (unsigned int i = 0; i < 8; i++)
-        UnloadTexture(textureCandy[i]);
+        UnloadTexture(candyTexture[i]);
 }
 
 Texture LoadFilteredTexture(char* path)
 {
-    Texture t = LoadTexture(path);
-    SetTextureFilter(t, TEXTURE_FILTER_BILINEAR);
-    return t;
+    Texture tex = LoadTexture(path);
+    SetTextureFilter(tex, TEXTURE_FILTER_BILINEAR);
+    return tex;
 }
 
-// Update & Draw
+// Update
 // ----------------------------------------------------------------------------
 
 void UpdateGameFrame(void)
@@ -116,6 +118,7 @@ void UpdateGameFrame(void)
         {
             currentMode = MODE_BAT;
             hand.startPos.y += 200.0f;
+            hand.angle = (hand.position.x - pinata.startPos.x)*0.1f + 30.0f;
         }
         else
         {
@@ -124,11 +127,12 @@ void UpdateGameFrame(void)
         }
     }
 
-    // Grab hand/bat
+    // Grab or Release Hand
     // ----------------------------------------------------------------------------
     if (!hand.grabbed && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
         hand.grabbed = true;
+        showHint = false;
     }
 
     if (hand.grabbed && IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
@@ -143,7 +147,7 @@ void UpdateGameFrame(void)
         Vector2 prevPos = hand.position;
         Vector2 newPos = Vector2Lerp(hand.position, mousePos, 25.0f*frameTime);
         hand.velocity = Vector2Subtract(newPos, prevPos);
-        speed = fabsf(hand.velocity.x)*camera.zoom/frameTime*0.01f;
+        speed = Vector2Length(hand.velocity)*camera.zoom/frameTime*0.01f;
 #if defined(PLATFORM_WEB) // web canvas scales differently
         speed *= 1.5f;
 #endif
@@ -193,10 +197,11 @@ void UpdateGameFrame(void)
 
     static float whooshVolume = 0.0f;
     static float whooshPitch = 1.0f;
-    float targetVolume = Remap(speed, 0, 100.0f, 0, 1.0f);
-    float targetPitch = Remap(speed, 0, 200.0f, 1.0f, 4.0f);
-    whooshVolume = Lerp(whooshVolume, targetVolume, 10.0f*frameTime);
-    whooshPitch  = Lerp(whooshPitch, targetPitch, 10.0f*frameTime);
+    float pitchMin = (currentMode == MODE_HAND)? 2.5f : 1.0f;
+    float targetVolume = (speed < 15)? 0 : Remap(speed, 15, 100.0f, 0, 1.0f);
+    float targetPitch = Remap(speed, 0, 200.0f, pitchMin, pitchMin*4);
+    whooshVolume = Lerp(whooshVolume, targetVolume, 5.0f*frameTime);
+    whooshPitch  = Lerp(whooshPitch, targetPitch, 5.0f*frameTime);
     SetSoundVolume(soundWhoosh, whooshVolume);
     SetSoundPitch(soundWhoosh, whooshPitch);
 
@@ -233,6 +238,7 @@ void UpdateGameFrame(void)
         PauseMusicStream(musicBackground);
         PlaySound(pinata.soundHit);
     }
+
     if (pinata.smashed)
     {
         pinata.rect.x -= pinata.xVelocity;
@@ -243,53 +249,84 @@ void UpdateGameFrame(void)
     // ----------------------------------------------------------------------------
     if (pinata.smashed && (timer < 0))
     {
-        ResetPinata();
+        pinata.smashed = false;
+        pinata.rect.x = pinata.startPos.x;
+        pinata.angle = 0;
+        maxSpeed = 0;
+        score = 0;
         StopMusicStream(musicWin);
         PlayMusicStream(musicBackground);
     }
 
     // Update Candy
+    // ----------------------------------------------------------------------------
     if (pinata.smashed)
     {
         for (unsigned int i = 0; i < CANDY_AMOUNT; i++)
         {
-            Vector2 movement = Vector2Scale(candyPiece[i].velocity, frameTime);
-            candyPiece[i].position = Vector2Add(candyPiece[i].position, movement);
-            candyPiece[i].velocity.y += 1000*frameTime;
-            candyPiece[i].angle += candyPiece[i].rotationRate*frameTime;
+            Vector2 movement = Vector2Scale(candy[i].velocity, frameTime);
+            candy[i].position = Vector2Add(candy[i].position, movement);
+            candy[i].velocity.y += 1000*frameTime;
+            candy[i].angle += candy[i].rotationRate*frameTime;
         }
     }
-    // Debug
-    // ----------------------------------------------------------------------------
 }
 
 void SpawnCandy(void)
 {
     for (unsigned int i = 0; i < CANDY_AMOUNT; i++)
     {
-        candyPiece[i].position = (Vector2){
+        candy[i].position = (Vector2){
             pinata.rect.x + GetRandomValue((int)-pinata.rect.width/8, (int)pinata.rect.width/8),
             pinata.rect.y + GetRandomValue((int)-pinata.rect.height/8, (int)pinata.rect.height/8),
         };
-        candyPiece[i].velocity.x = (float)GetRandomValue(200, 1500);
-        candyPiece[i].velocity.y = (float)GetRandomValue(-200, -1000);
-        candyPiece[i].rotationRate = GetRandomValue(-300,300);
-        candyPiece[i].textureId = GetRandomValue(0,7);
+        candy[i].velocity.x = (float)GetRandomValue(100, 1200);
+        candy[i].velocity.y = (float)GetRandomValue(-100, -1000);
+        candy[i].rotationRate = GetRandomValue(-300,300);
+        candy[i].textureId = GetRandomValue(0,7);
     }
 }
+
+// Collision
+// ----------------------------------------------------------------------------
+
+bool CheckCollisionPointRecRotated(Vector2 point, Rectangle rect, Vector2 origin, float angle)
+{
+    Rectangle localRect = { 0, 0, rect.width, rect.height };
+    localRect.x -= origin.x*2;
+    localRect.y -= origin.y*2;
+    Vector2 rotVector = Vector2Subtract(point, (Vector2){ rect.x, rect.y });
+    rotVector = Vector2Rotate(rotVector, -angle*DEG2RAD);
+    Vector2 localPoint = Vector2Subtract(rotVector, (Vector2){ origin.x, origin.y });
+    return CheckCollisionPointRec(localPoint, localRect);
+}
+
+bool CheckCollisionCircleRecRotated(Vector2 center, float radius, Rectangle rect, Vector2 origin, float angle)
+{
+    Rectangle localRect = { 0, 0, rect.width, rect.height };
+    localRect.x -= origin.x*2;
+    localRect.y -= origin.y*2;
+    Vector2 rotVector = Vector2Subtract(center, (Vector2){ rect.x, rect.y });
+    rotVector = Vector2Rotate(rotVector, -angle*DEG2RAD);
+    Vector2 localCenter = Vector2Subtract(rotVector, (Vector2){ origin.x, origin.y });
+    return CheckCollisionCircleRec(localCenter, radius, localRect);
+}
+
+// Draw
+// ----------------------------------------------------------------------------
 
 void DrawGameFrame(void)
 {
     ClearBackground(ORANGE);
 
-    // Draw Pinata
+    // Draw pinata
     DrawSpriteRectangle(&pinata.sprite, pinata.rect, pinata.origin, pinata.angle);
 
-    // Draw Hand
+    // Draw hand
     if ((currentMode == MODE_HAND) || !hand.grabbed)
         DrawSpriteCircle(&hand.spriteOpen, hand.position, hand.radius, hand.angle);
 
-    // Draw Bat
+    // Draw bat
     if (currentMode == MODE_BAT)
     {
         DrawSpriteRectangle(&bat.sprite, bat.rect, bat.origin, bat.angle);
@@ -297,45 +334,47 @@ void DrawGameFrame(void)
             DrawSpriteCircle(&hand.spriteClosed, hand.position, hand.radius, hand.angle);
     }
 
-    // Draw score
+    // Draw hint
+    int fontSize = 50;
+    Color fontColor = RAYWHITE;
+    if (showHint)
+    {
+        const char *scoreText = "Click to drag";
+        int textLength = (int)MeasureTextEx(textFont, scoreText, fontSize, 0).x;
+        DrawTextEx(textFont, scoreText,
+                   (Vector2){ hand.position.x - textLength/2,
+                   hand.position.y + fontSize + 100, },
+                   fontSize, 0, fontColor);
+    }
+
+    // Draw score message
     if (pinata.smashed)
     {
-        int fontSize = 180;
         Color fontColor = ColorBrightness(YELLOW,0.5);
         if (score > 400.0f)
         {
-            const char *text = "How?!";
             fontColor = ColorBrightness(RED, 0.1f);
-            int textLength = MeasureText(text, fontSize);
-            DrawText(text,
-                     (VIRTUAL_WIDTH - textLength)/2,
-                     (VIRTUAL_HEIGHT - fontSize)/2 - fontSize,
-                     fontSize, fontColor);
+            DrawCenterText("How?!", fontColor, false);
         }
         else if (score > 200.0f)
         {
-            const char *text = "Holy Crap!";
             fontColor = YELLOW;
-            int textLength = MeasureText(text, fontSize);
-            DrawText(text,
-                     (VIRTUAL_WIDTH - textLength)/2,
-                     (VIRTUAL_HEIGHT - fontSize)/2 - fontSize,
-                     fontSize, fontColor);
+            DrawCenterText("Holy Crap!", fontColor, false);
         }
-        const char *scoreText = TextFormat("Score: %.0f", score);
-        int textLength = MeasureText(scoreText, fontSize);
-        DrawText(scoreText,
-                 (VIRTUAL_WIDTH - textLength)/2,
-                 (VIRTUAL_HEIGHT - fontSize)/2,
-                 fontSize, fontColor);
+        else DrawCenterText("Swing harder!", fontColor, false);
 
-        // Draw candy
+        DrawCenterText(TextFormat("Score: %.0f", score),
+                       fontColor, true);
+    }
+
+    // Draw candy
+    if (pinata.smashed && (score > 200.0f))
+    {
         for (unsigned int i = 0; i < CANDY_AMOUNT; i++)
         {
-            // DrawCircleV(candyPiece[i].position, 10, PINK);
-            DrawSpriteCircle(&textureCandy[candyPiece[i].textureId],
-                             candyPiece[i].position,
-                             25, candyPiece[i].angle);
+            DrawSpriteCircle(&candyTexture[candy[i].textureId],
+                             candy[i].position,
+                             30, candy[i].angle);
         }
     }
 
@@ -376,33 +415,13 @@ void DrawSpriteCircle(Texture *sprite, Vector2 center, float radius, float angle
     DrawTexturePro(*sprite, spriteSrc, spriteDest, spriteOrigin, angle, WHITE);
 }
 
-bool CheckCollisionPointRecRotated(Vector2 point, Rectangle rect, Vector2 origin, float angle)
+void DrawCenterText(const char* text, Color fontColor, bool nextLine)
 {
-    Rectangle localRect = { 0, 0, rect.width, rect.height };
-    localRect.x -= origin.x*2;
-    localRect.y -= origin.y*2;
-    Vector2 rotVector = Vector2Subtract(point, (Vector2){ rect.x, rect.y });
-    rotVector = Vector2Rotate(rotVector, -angle*DEG2RAD);
-    Vector2 localPoint = Vector2Subtract(rotVector, (Vector2){ origin.x, origin.y });
-    return CheckCollisionPointRec(localPoint, localRect);
-}
-
-bool CheckCollisionCircleRecRotated(Vector2 center, float radius, Rectangle rect, Vector2 origin, float angle)
-{
-    Rectangle localRect = { 0, 0, rect.width, rect.height };
-    localRect.x -= origin.x*2;
-    localRect.y -= origin.y*2;
-    Vector2 rotVector = Vector2Subtract(center, (Vector2){ rect.x, rect.y });
-    rotVector = Vector2Rotate(rotVector, -angle*DEG2RAD);
-    Vector2 localCenter = Vector2Subtract(rotVector, (Vector2){ origin.x, origin.y });
-    return CheckCollisionCircleRec(localCenter, radius, localRect);
-}
-
-void ResetPinata(void)
-{
-    pinata.smashed = false;
-    pinata.rect.x = pinata.startPos.x;
-    pinata.angle = 0;
-    maxSpeed = 0;
-    score = 0;
+    const int fontSize = 130;
+    float offset = nextLine? fontSize : 0;
+    int textLength = (int)MeasureTextEx(textFont, text, fontSize, 0).x;
+    DrawTextEx(textFont, text,
+               (Vector2){ (VIRTUAL_WIDTH - textLength)/2,
+               (VIRTUAL_HEIGHT - fontSize)/2 - 200 + offset, },
+               fontSize, 0, fontColor);
 }
