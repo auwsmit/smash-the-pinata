@@ -6,14 +6,16 @@
 #include "config.h"
 
 // Game globals
-GameMode currentMode;
-EntityPinata pinata;
-EntityHand hand;
-EntityBat bat;
+GameMode currentMode           = { 0 };
+EntityPinata pinata            = { 0 };
+EntityHand hand                = { 0 };
+EntityBat bat                  = { 0 };
+Candy candyPiece[CANDY_AMOUNT] = { 0 };
+Texture textureCandy[8];
 Music musicBackground;
 Music musicWin;
-Music musicWhooshEffect;
-Vector2 grabPos;
+Sound soundWhoosh;
+Vector2 mousePos;
 float timer;
 float score;
 float speed;
@@ -25,24 +27,24 @@ float maxSpeed;
 void InitGameState(void)
 {
     currentScreen = SCREEN_LOGO;
-    currentMode = MODE_BAT;
+    currentMode   = MODE_BAT;
     camera.target = (Vector2){ VIRTUAL_WIDTH/2, VIRTUAL_HEIGHT/2 };
 
-    // Assets
+    // Load Assets
     musicBackground   = LoadMusicStream("assets/music_background.wav");
     musicWin          = LoadMusicStream("assets/music_highscore.wav");
-    musicWhooshEffect = LoadMusicStream("assets/whoosh.wav");
+    soundWhoosh       = LoadSound("assets/whoosh.wav");
     pinata.sprite     = LoadFilteredTexture("assets/pinata.png");
     pinata.soundHit   = LoadSound("assets/hit.wav");
     bat.sprite        = LoadFilteredTexture("assets/bat.png");
     bat.soundHit      = LoadSound("assets/bonk.wav");
     hand.spriteOpen   = LoadFilteredTexture("assets/hand_open.png");
     hand.spriteClosed = LoadFilteredTexture("assets/hand_closed.png");
+    for (unsigned int i = 0; i < 8; i++)
+        textureCandy[i] = LoadFilteredTexture((char *)TextFormat("assets/candy%i.png", i + 1));
 
     // Setup sounds and music
-    SetMusicVolume(musicWhooshEffect, 0.0f);
-    SetMusicPitch(musicWhooshEffect, 2.0f);
-    PlayMusicStream(musicWhooshEffect);
+    // SetMusicVolume(soundWhoosh, 0.0f);
     PlayMusicStream(musicBackground);
 
     // Pinata
@@ -56,7 +58,7 @@ void InitGameState(void)
     // Hand
     hand.startAngle = 90.0f;
     hand.angle      = hand.startAngle;
-    hand.radius     = 100.0f;
+    hand.radius     = 90.0f;
     hand.position.x = VIRTUAL_WIDTH - 700.0f - hand.radius/2;
     hand.position.y = (VIRTUAL_HEIGHT - hand.radius)/2;
     if (currentMode == MODE_BAT)
@@ -64,10 +66,10 @@ void InitGameState(void)
     hand.startPos   = hand.position;
 
     // Bat
-    bat.rect.height = 700;
+    bat.rect.height = 800;
     bat.rect.width  = bat.rect.height*((float)bat.sprite.width/bat.sprite.height);
-    bat.rect.x = VIRTUAL_WIDTH - 500.0f - bat.rect.width;
-    bat.rect.y = bat.rect.height*(2.0f/3.0f);
+    // bat.rect.x = VIRTUAL_WIDTH - 500.0f - bat.rect.width;
+    // bat.rect.y = bat.rect.height*(2.0f/3.0f);
     bat.origin = (Vector2){ bat.rect.width/2.0f, bat.rect.height - bat.rect.height/6.0f };
 }
 
@@ -75,13 +77,15 @@ void FreeGameState(void)
 {
     UnloadMusicStream(musicBackground);
     UnloadMusicStream(musicWin);
-    UnloadMusicStream(musicWhooshEffect);
+    UnloadSound(soundWhoosh);
     UnloadTexture(pinata.sprite);
     UnloadSound(pinata.soundHit);
     UnloadTexture(bat.sprite);
     UnloadSound(bat.soundHit);
     UnloadTexture(hand.spriteOpen);
     UnloadTexture(hand.spriteClosed);
+    for (unsigned int i = 0; i < 8; i++)
+        UnloadTexture(textureCandy[i]);
 }
 
 Texture LoadFilteredTexture(char* path)
@@ -98,11 +102,14 @@ void UpdateGameFrame(void)
 {
     UpdateMusicStream(musicBackground);
     UpdateMusicStream(musicWin);
-    UpdateMusicStream(musicWhooshEffect);
+    if (!IsSoundPlaying(soundWhoosh))
+        PlaySound(soundWhoosh);
 
     timer -= frameTime;
-    grabPos = GetScreenToWorld2D(GetMousePosition(), camera);
+    mousePos = GetScreenToWorld2D(GetMousePosition(), camera);
 
+    // Mode swap
+    // ----------------------------------------------------------------------------
     if (IsKeyPressed(KEY_SPACE))
     {
         if (currentMode == MODE_HAND)
@@ -134,7 +141,7 @@ void UpdateGameFrame(void)
     if (hand.grabbed)
     {
         Vector2 prevPos = hand.position;
-        Vector2 newPos = Vector2Lerp(hand.position, grabPos, 25.0f*frameTime);
+        Vector2 newPos = Vector2Lerp(hand.position, mousePos, 25.0f*frameTime);
         hand.velocity = Vector2Subtract(newPos, prevPos);
         speed = fabsf(hand.velocity.x)*camera.zoom/frameTime*0.01f;
 #if defined(PLATFORM_WEB) // web canvas scales differently
@@ -190,14 +197,22 @@ void UpdateGameFrame(void)
     float targetPitch = Remap(speed, 0, 200.0f, 1.0f, 4.0f);
     whooshVolume = Lerp(whooshVolume, targetVolume, 10.0f*frameTime);
     whooshPitch  = Lerp(whooshPitch, targetPitch, 10.0f*frameTime);
-    SetMusicVolume(musicWhooshEffect, whooshVolume);
-    SetMusicPitch(musicWhooshEffect, whooshPitch);
+    SetSoundVolume(soundWhoosh, whooshVolume);
+    SetSoundPitch(soundWhoosh, whooshPitch);
 
     // Hit pinata at minimum velocity
     // ----------------------------------------------------------------------------
     Vector2 origin = { pinata.rect.width/2, pinata.rect.height/2 };
+    Vector2 hitPosition = hand.position;
+    if (currentMode == MODE_BAT) // set hitPosition at center of bat
+    {
+        Vector2 hitOffset = { 0, bat.origin.y/2 };
+        Vector2 batHandle = { bat.rect.x, bat.rect.y };
+        hitOffset = Vector2Rotate(hitOffset, bat.angle*DEG2RAD);
+        hitPosition = Vector2Subtract(batHandle, hitOffset);
+    }
     if (!pinata.smashed && hand.grabbed && (speed > 50.0f) && (hand.velocity.x < 0) &&
-        CheckCollisionCircleRecRotated(hand.position, hand.radius, pinata.rect, origin, pinata.angle))
+        CheckCollisionCircleRecRotated(hitPosition, hand.radius, pinata.rect, origin, pinata.angle))
     {
         score = speed;
         pinata.smashed = true;
@@ -208,6 +223,7 @@ void UpdateGameFrame(void)
             timer = 3.0f;
             pinata.spinRate *= 1.5f;
             pinata.xVelocity *= 0.3f;
+            SpawnCandy();
             PlayMusicStream(musicWin);
             if (currentMode == MODE_BAT) PlaySound(bat.soundHit);
 
@@ -232,8 +248,34 @@ void UpdateGameFrame(void)
         PlayMusicStream(musicBackground);
     }
 
+    // Update Candy
+    if (pinata.smashed)
+    {
+        for (unsigned int i = 0; i < CANDY_AMOUNT; i++)
+        {
+            Vector2 movement = Vector2Scale(candyPiece[i].velocity, frameTime);
+            candyPiece[i].position = Vector2Add(candyPiece[i].position, movement);
+            candyPiece[i].velocity.y += 1000*frameTime;
+            candyPiece[i].angle += candyPiece[i].rotationRate*frameTime;
+        }
+    }
     // Debug
     // ----------------------------------------------------------------------------
+}
+
+void SpawnCandy(void)
+{
+    for (unsigned int i = 0; i < CANDY_AMOUNT; i++)
+    {
+        candyPiece[i].position = (Vector2){
+            pinata.rect.x + GetRandomValue((int)-pinata.rect.width/8, (int)pinata.rect.width/8),
+            pinata.rect.y + GetRandomValue((int)-pinata.rect.height/8, (int)pinata.rect.height/8),
+        };
+        candyPiece[i].velocity.x = (float)GetRandomValue(200, 1500);
+        candyPiece[i].velocity.y = (float)GetRandomValue(-200, -1000);
+        candyPiece[i].rotationRate = GetRandomValue(-300,300);
+        candyPiece[i].textureId = GetRandomValue(0,7);
+    }
 }
 
 void DrawGameFrame(void)
@@ -286,14 +328,21 @@ void DrawGameFrame(void)
                  (VIRTUAL_WIDTH - textLength)/2,
                  (VIRTUAL_HEIGHT - fontSize)/2,
                  fontSize, fontColor);
+
+        // Draw candy
+        for (unsigned int i = 0; i < CANDY_AMOUNT; i++)
+        {
+            // DrawCircleV(candyPiece[i].position, 10, PINK);
+            DrawSpriteCircle(&textureCandy[candyPiece[i].textureId],
+                             candyPiece[i].position,
+                             25, candyPiece[i].angle);
+        }
     }
 
     // // Debug
     // const int textSize = 50;
     // int textX = 50;
     // int textY = 50;
-    // Vector2 mousePos = GetMousePosition();
-    // DrawText(TextFormat("mouse x, y: %.3f %.3f", mousePos.x, mousePos.y), textX, textY, textSize, RAYWHITE);
     // textY += textSize;
     // DrawText(TextFormat("screen width, height: %i %i", GetScreenWidth(), GetScreenHeight()), textX, textY, textSize, RAYWHITE);
     // textY += textSize;
@@ -309,7 +358,6 @@ void DrawGameFrame(void)
 void DrawSpriteRectangle(Texture *sprite, Rectangle rect, Vector2 origin, float angle)
 {
     Rectangle src = { 0, 0, (float)sprite->width, (float)sprite->height };
-    // DrawRectanglePro(rect, origin, angle, WHITE);
     DrawTexturePro(*sprite, src, rect, origin, angle, WHITE);
 }
 
@@ -325,7 +373,6 @@ void DrawSpriteCircle(Texture *sprite, Vector2 center, float radius, float angle
         sprite->width/2*spriteScale,
         sprite->height/2*spriteScale };
 
-    // DrawCircleV(hand.position, hand.radius, WHITE);
     DrawTexturePro(*sprite, spriteSrc, spriteDest, spriteOrigin, angle, WHITE);
 }
 

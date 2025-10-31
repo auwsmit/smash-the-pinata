@@ -8,6 +8,7 @@
 
 // Macros
 // ----------------------------------------------------------------------------
+#define CANDY_AMOUNT 50
 
 // Types and Structures
 // ----------------------------------------------------------------------------
@@ -16,7 +17,7 @@ typedef enum { SCREEN_LOGO, SCREEN_GAMEPLAY } ScreenState;
 
 typedef enum { MODE_BAT, MODE_HAND } GameMode;
 
-typedef struct EntityPinata {
+typedef struct {
     Texture sprite;
     Sound soundHit;
     Rectangle rect;
@@ -29,7 +30,7 @@ typedef struct EntityPinata {
     bool smashed;
 } EntityPinata;
 
-typedef struct EntityBat {
+typedef struct {
     Texture sprite;
     Sound soundHit;
     Rectangle rect;
@@ -38,7 +39,7 @@ typedef struct EntityBat {
     float startAngle;
 } EntityBat;
 
-typedef struct EntityHand {
+typedef struct {
     Texture spriteOpen;
     Texture spriteClosed;
     Vector2 position;
@@ -49,6 +50,16 @@ typedef struct EntityHand {
     float startAngle;
     bool grabbed;
 } EntityHand;
+
+typedef struct {
+    Vector2 position;
+    Vector2 velocity;
+    int textureId;
+    Color color;
+    float angle;
+    float rotationRate;
+    bool active;
+} Candy;
 
 // Game state, used across project
 extern Camera2D camera;
@@ -66,6 +77,7 @@ Texture LoadFilteredTexture(char* path);
 
 // Update
 void UpdateGameFrame(void); // Updates all the game's data and objects for the current frame
+void SpawnCandy(void);
 void ResetPinata(void);
 
 // Collision
